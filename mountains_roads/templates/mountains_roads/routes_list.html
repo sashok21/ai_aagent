@@ -1,0 +1,164 @@
+{% extends 'mountains_roads/base.html' %}
+{% load static %}
+
+{% block title %}Всі маршрути - Гірські маршрути України{% endblock %}
+
+{% block content %}
+    <div class="page-header" style="background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80');">
+        <div class="container">
+            <h1>Всі гірські маршрути</h1>
+            <p>Знайдіть ідеальний маршрут для своєї наступної пригоди</p>
+        </div>
+    </div>
+
+    <div class="filters-section">
+        <div class="container">
+            <form method="get" id="filterForm">
+                <div class="filters-container">
+                    <div class="filter-group">
+                        <label for="search">Пошук</label>
+                        <input type="text" id="search" name="search" placeholder="Назва маршруту..."
+                               value="{{ request.GET.search }}">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="difficulty">Складність</label>
+                        <select id="difficulty" name="difficulty">
+                            <option value="">Всі рівні</option>
+                            {% for value, label in difficulties %}
+                                <option value="{{ value }}"
+                                        {% if request.GET.difficulty == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="region">Регіон</label>
+                        <select id="region" name="region">
+                            <option value="">Всі регіони</option>
+                            {% for r in regions %}
+                                <option value="{{ r }}"
+                                        {% if request.GET.region == r %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="min_height">Мінімальна висота (м)</label>
+                        <input type="number" id="min_height" name="min_height" placeholder="0"
+                               value="{{ request.GET.min_height }}">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="max_height">Максимальна висота (м)</label>
+                        <input type="number" id="max_height" name="max_height" placeholder="2500"
+                               value="{{ request.GET.max_height }}">
+                    </div>
+                </div>
+
+                <div class="filter-buttons" style="margin-top: 1.5rem;">
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter"></i> Фільтрувати
+                    </button>
+                    <a href="{% url 'routes-list' %}" class="btn btn-secondary">Очистити</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        {% if routes %}
+            <div class="routes-header">
+                <span class="routes-count">Знайдено: <strong>{{ paginator.count }}</strong> маршрутів</span>
+                <div class="sort-control">
+                    <label for="sort" style="color: var(--primary-color); font-weight: 600;">Сортувати:</label>
+                    <form method="get" style="display: flex; gap: 0.5rem;">
+                        <select name="sort" id="sort" onchange="this.form.submit()">
+                            <option value="-rating"
+                                    {% if request.GET.sort == '-rating' or not request.GET.sort %}selected{% endif %}>За
+                                рейтингом ↓
+                            </option>
+                            <option value="rating" {% if request.GET.sort == 'rating' %}selected{% endif %}>За рейтингом
+                                ↑
+                            </option>
+                            <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>За назвою A-Z
+                            </option>
+                            <option value="-name" {% if request.GET.sort == '-name' %}selected{% endif %}>За назвою
+                                Z-A
+                            </option>
+                            <option value="height" {% if request.GET.sort == 'height' %}selected{% endif %}>За висотою
+                                ↓
+                            </option>
+                            <option value="-height" {% if request.GET.sort == '-height' %}selected{% endif %}>За висотою
+                                ↑
+                            </option>
+                        </select>
+                    </form>
+                </div>
+            </div>
+
+            <div class="routes-grid">
+                {% for route in routes %}
+                    <div class="route-card">
+                        <div class="route-image" style="background-image: url('{% if route.image %}{{ route.image.url }}{% else %}https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80{% endif %}');">
+                            <div class="route-badge">
+                                {% if route.difficulty == 'easy' %}
+                                    <i class="fa-solid fa-circle" style="color: #4caf50;"></i> Легка
+                                {% elif route.difficulty == 'medium' %}
+                                    <i class="fa-solid fa-circle" style="color: #ff9800;"></i> Середня
+                                {% else %}
+                                    <i class="fa-solid fa-circle" style="color: #f44336;"></i> Важка
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="route-content">
+                            <h3 class="route-title">{{ route.name }}</h3>
+                            <div class="route-meta">
+                                <span><i class="fa-solid fa-location-dot"></i> {{ route.height }} м</span>
+                                <span><i class="fa-solid fa-stopwatch"></i> {{ route.duration_hours|floatformat:1 }} год</span>
+                            </div>
+                            <div class="route-meta">
+                                <span>{{ route.region }}</span>
+                                <span><i class="fa-solid fa-star"
+                                         style="color: #ffc107;"></i> {{ route.get_average_rating|floatformat:1 }}</span>
+                            </div>
+                            <p class="route-description">{{ route.description|truncatewords:20 }}</p>
+                            <a href="{% url 'route-detail' route.id %}" class="btn btn-primary">Детальніше</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if is_paginated %}
+                <div class="pagination">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1{% if request.GET.items %}&{{ request.GET.urlencode }}{% endif %}">« Перша</a>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.items %}&{{ request.GET.urlencode }}{% endif %}">‹
+                            Попередня</a>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <span class="current">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}{% if request.GET.items %}&{{ request.GET.urlencode }}{% endif %}">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.items %}&{{ request.GET.urlencode }}{% endif %}">Наступна
+                            ›</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.items %}&{{ request.GET.urlencode }}{% endif %}">Остання
+                            »</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="no-results">
+                <h2><i class="fa-solid fa-face-frown"></i> Маршрутів не знайдено</h2>
+                <p>Спробуйте змінити параметри фільтра</p>
+                <a href="{% url 'routes-list' %}" class="btn btn-primary" style="margin-top: 1rem;">Показати всі
+                    маршрути</a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

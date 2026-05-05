@@ -1,0 +1,31 @@
+{% extends 'mountains_roads/base.html' %}
+
+{% block title %}Видалення відгуку{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="delete-container">
+            <h2><i class="fa-solid fa-triangle-exclamation"></i> Видалення відгуку</h2>
+
+            <div class="delete-warning">
+                <p>Ви впевнені, що хочете видалити цей відгук? Цю дію не можна буде скасувати.</p>
+            </div>
+
+            <div class="review-preview">
+                <h4>{{ object.title }}</h4>
+                <p style="color: var(--gray); margin-bottom: 1rem;">{{ object.text }}</p>
+                <small style="color: var(--gray);">
+                    Маршрут: <strong>{{ object.route.name }}</strong>
+                </small>
+            </div>
+
+            <div class="delete-buttons">
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit"><i class="fa-solid fa-trash"></i> Видалити назавжди</button>
+                </form>
+                <a href="{% url 'route-detail' object.route.id %}">Скасувати</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

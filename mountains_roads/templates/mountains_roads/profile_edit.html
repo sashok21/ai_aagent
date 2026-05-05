@@ -1,0 +1,35 @@
+{% extends 'mountains_roads/base.html' %}
+
+{% block title %}Редагування профілю{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="edit-container">
+            <h2><i class="fa-solid fa-user-pen"></i> Редагування профілю</h2>
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                {% for field in form %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <ul style="color: #ff6b6b; list-style: none; padding: 0;">
+                                {% for error in field.errors %}
+                                    <li style="font-size: 0.85rem; margin-top: 0.3rem;">{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <div class="form-buttons">
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Зберегти зміни
+                    </button>
+                    <a href="{% url 'user-profile' user.username %}" class="btn btn-secondary">Скасувати</a>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

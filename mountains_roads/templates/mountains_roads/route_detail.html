@@ -1,0 +1,148 @@
+{% extends 'mountains_roads/base.html' %}
+{% load static %}
+
+{% block title %}{{ route.name }} - Гірські маршрути{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+{% endblock %}
+
+{% block content %}
+    <div class="page-header" style="background-image: url('{% if route.image %}{{ route.image.url }}{% else %}https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80{% endif %}');">
+        <div class="container">
+            <h1>{{ route.name }}</h1>
+            <p>{{ route.region }}</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="route-info-grid">
+            <div class="info-card">
+                <h4><i class="fa-solid fa-location-dot"></i> Висота</h4>
+                <p style="font-size: 1.5rem; color: var(--secondary-color);">{{ route.height }} м</p>
+            </div>
+            <div class="info-card">
+                <h4><i class="fa-solid fa-person-hiking"></i> Складність</h4>
+                <p style="font-size: 1.5rem; color: var(--secondary-color);">
+                    {% if route.difficulty == 'easy' %}Легка
+                    {% elif route.difficulty == 'medium' %}Середня
+                    {% else %}Важка{% endif %}
+                </p>
+            </div>
+            <div class="info-card">
+                <h4><i class="fa-solid fa-stopwatch"></i> Тривалість</h4>
+                <p style="font-size: 1.5rem; color: var(--secondary-color);">{{ route.duration_hours|floatformat:1 }}
+                    год</p>
+            </div>
+            <div class="info-card">
+                <h4><i class="fa-solid fa-ruler-horizontal"></i> Відстань</h4>
+                <p style="font-size: 1.5rem; color: var(--secondary-color);">{{ route.distance_km|floatformat:1 }}
+                    км</p>
+            </div>
+        </div>
+
+        <div class="rating-stats">
+            <div class="stat">
+                <div class="stat-number">{{ average_rating|floatformat:1 }}</div>
+                <div class="stat-label"><i class="fa-solid fa-star" style="color: #ffc107;"></i> Рейтинг</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">{{ reviews.count }}</div>
+                <div class="stat-label">Відгуків</div>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 2rem; color: var(--primary-color);">Опис маршруту</h2>
+        <p>{{ route.description }}</p>
+
+        <div class="map-container" id="map"></div>
+
+        {% if user.is_authenticated %}
+            <div class="btn-group">
+                <button class="action-btn favorite {% if is_favorite %}active{% endif %}"
+                        onclick="toggleFavorite('{% url 'toggle-favorite' route.id %}')">
+                    {% if is_favorite %}<i class="fa-solid fa-heart-crack"></i> Видалити з улюблених{% else %}
+                        <i class="fa-solid fa-heart"></i> Додати в улюблені{% endif %}
+                </button>
+                <button class="action-btn completed {% if is_completed %}active{% endif %}"
+                        onclick="toggleCompleted('{% url 'toggle-completed' route.id %}')">
+                    {% if is_completed %}<i class="fa-solid fa-xmark"></i> Позначити як не пройдено{% else %}
+                        <i class="fa-solid fa-check"></i> Позначити як пройдено{% endif %}
+                </button>
+            </div>
+        {% endif %}
+
+        <div class="reviews-section">
+            <h2 style="color: var(--primary-color); margin-bottom: 2rem;">Відгуки користувачів</h2>
+
+            {% if user.is_authenticated %}
+                <div style="margin-bottom: 2rem;">
+                    <a href="{% url 'review-create' route.id %}" class="btn btn-primary">Залишити відгук</a>
+                </div>
+            {% else %}
+                <p style="margin-bottom: 2rem; color: var(--gray);">
+                    <a href="{% url 'login' %}" style="color: var(--secondary-color);">Увійдіть</a>,
+                    щоб залишити відгук
+                </p>
+            {% endif %}
+
+            {% if reviews %}
+                {% for review in reviews %}
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div>
+                                <div class="review-author">
+                                    <a href="{% url 'user-profile' review.user.username %}"
+                                       style="color: var(--primary-color);">
+                                        {{ review.user.get_full_name|default:review.user.username }}
+                                    </a>
+                                </div>
+                                <div class="review-date">{{ review.created_at|date:"d.m.Y H:i" }}</div>
+                            </div>
+                            <div class="review-rating">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= review.rating %}
+                                        <i class="fa-solid fa-star"></i>
+                                    {% else %}
+                                        <i class="fa-regular fa-star" style="color: #e0e0e0;"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <h3 style="color: var(--dark-gray); margin-bottom: 0.5rem;">{{ review.title }}</h3>
+                        <p style="color: var(--gray); line-height: 1.6;">{{ review.text }}</p>
+
+                        {% if user.is_authenticated and user == review.user %}
+                            <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                                <a href="{% url 'review-update' review.id %}" class="btn btn-secondary"
+                                   style="padding: 8px 15px; font-size: 0.9rem;">Редагувати</a>
+                                <a href="{% url 'review-delete' review.id %}" class="btn btn-secondary"
+                                   style="padding: 8px 15px; font-size: 0.9rem; background: #ff6b6b; color: white;">Видалити</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p style="color: var(--gray); font-style: italic;">Ще немає відгуків. Будьте першим!</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        const coords = '{{ route.map_coordinates }}'.split(',');
+        const map = L.map('map').setView([parseFloat(coords[0]), parseFloat(coords[1])], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        L.marker([parseFloat(coords[0]), parseFloat(coords[1])]).addTo(map)
+            .bindPopup('<b>{{ route.name }}</b>')
+            .openPopup();
+    </script>
+{% endblock %}
