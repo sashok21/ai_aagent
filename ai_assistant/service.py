@@ -38,7 +38,10 @@ def _build_gemini_history(conversation_history: list) -> list:
 
 
 def run_agent(conversation_history: list) -> str:
-    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY не знайдено. Перевір файл .env у корені проекту.")
+    client = genai.Client(api_key=api_key)
 
     history = conversation_history[:-1]
     last_user_message = conversation_history[-1]["content"]
