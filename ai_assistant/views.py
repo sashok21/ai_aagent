@@ -1,12 +1,13 @@
 import json
+import logging
 
 from django.http import JsonResponse
 from django.views import View
 from django.views.generic import TemplateView
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 
 from .service import run_agent
+
+logger = logging.getLogger(__name__)
 
 SESSION_KEY = "vgoru_ai_history"
 MAX_HISTORY_PAIRS = 10
@@ -36,15 +37,15 @@ class AssistantChatApiView(View):
             return JsonResponse({"error": "Повідомлення занадто довге."}, status=400)
 
         history = request.session.get(SESSION_KEY, [])
-
         history.append({"role": "user", "content": user_message})
 
         try:
             reply = run_agent(history)
-        except Exception:
+        except Exception as exc:
+            logger.exception("ВГору AI — помилка run_agent: %s", exc)
             history.pop()
             return JsonResponse(
-                {"error": "Помилка сервісу. Спробуй ще раз або онови сторінку."},
+                {"error": f"Помилка сервісу: {exc}"},
                 status=500,
             )
 
